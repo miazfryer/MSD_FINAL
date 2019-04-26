@@ -1,0 +1,111 @@
+---
+title: "MSD final project"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+library(modelr)
+library(ggplot2)
+library(igraph)
+
+```
+
+
+
+```{r}
+
+hist_edgelist = read.table( "Dataset 5. History_edgelist.txt", header = TRUE)
+hist_vertex = read.table(file = 'Dataset 6. History_vertexlist.txt', sep = '\t', header = TRUE)
+
+head(hist_edgelist)
+head(hist_vertex)
+```
+
+
+
+```{r}
+employee_counts = hist_edgelist %>%
+  group_by( u ) %>%
+  summarize( count = n() ) %>%
+  ungroup()
+
+grad_counts = hist_edgelist %>%
+  group_by( v ) %>%
+  summarize( count = n() ) %>%
+  ungroup()
+
+
+head(  employee_counts )
+head(  grad_counts )
+
+
+```
+
+```{r}
+employee_counts %>%
+  ggplot(aes(x = u, y = count)) +
+  geom_point()
+
+
+```
+
+Making a network of weighted edges
+
+```{r}
+hist_weighted_edgelist = hist_edgelist %>% 
+  group_by(v, u) %>%
+  summarize( count = n()) %>%
+  ungroup()
+  
+```
+
+
+
+Filtering to just the schools with a count $> 100$ so I can make a graph to just look at the network
+```{r}
+ids = employee_counts %>%
+  filter(count > 100) %>%
+  select(u)
+
+smaller = hist_weighted_edgelist %>%
+  filter( u %in% ids$u , v %in% ids$u)
+
+
+nrow( smaller )
+nrow(hist_edgelist)
+
+
+```
+
+
+```{r}
+
+
+
+
+graph = hist_weighted_edgelist %>%
+  graph_from_data_frame(directed = TRUE)
+
+smaller_graph = smaller %>%
+   graph_from_data_frame(directed = TRUE)
+
+plot(graph, vertex_size = 1, edge.width=E(graph)$count/5)
+plot(smaller_graph, vertex_size = 2 ,edge.width=E(smaller_graph)$count/5)
+
+
+
+
+```
+
+
+
+```{r}
+#For ideas of looking into how the networks change when filtering for these values
+
+hist_edgelist %>%
+  group_by(rank) %>%
+  summarize( count = n() )
+
+```
