@@ -1,6 +1,8 @@
 ---
 title: "MSD final project"
-output: html_notebook
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 
 
@@ -28,8 +30,10 @@ head(hist_vertex)
 ```{r}
 employee_counts = hist_edgelist %>%
   group_by( u ) %>%
-  summarize( count = n() ) %>%
-  ungroup()
+  summarize( count = n()) %>%
+  ungroup() %>%
+  left_join( hist_vertex, by = "u") %>%
+  select(u, count, institution)
 
 grad_counts = hist_edgelist %>%
   group_by( v ) %>%
@@ -39,7 +43,6 @@ grad_counts = hist_edgelist %>%
 
 head(  employee_counts )
 head(  grad_counts )
-
 
 ```
 
@@ -51,14 +54,28 @@ employee_counts %>%
 
 ```
 
+```{r}
+tail( employee_counts )
+
+#getting rid of row 145, "All Others" Doesn't provide much info
+employee_counts = employee_counts %>% 
+  filter(u != 145)
+
+
+```
+
 Making a network of weighted edges
 
 ```{r}
 hist_weighted_edgelist = hist_edgelist %>% 
   group_by(v, u) %>%
   summarize( count = n()) %>%
-  ungroup()
+  ungroup() %>%
+  left_join( hist_vertex, by = c('v'= 'u')) %>%
+  select(v, u, count, institution)
   
+
+tail( hist_weighted_edgelist )
 ```
 
 
@@ -67,7 +84,10 @@ Filtering to just the schools with a count $> 100$ so I can make a graph to just
 ```{r}
 ids = employee_counts %>%
   filter(count > 100) %>%
-  select(u)
+  select(u) 
+
+
+
 
 smaller = hist_weighted_edgelist %>%
   filter( u %in% ids$u , v %in% ids$u)
@@ -75,7 +95,7 @@ smaller = hist_weighted_edgelist %>%
 
 nrow( smaller )
 nrow(hist_edgelist)
-
+ids
 
 ```
 
@@ -91,10 +111,19 @@ graph = hist_weighted_edgelist %>%
 smaller_graph = smaller %>%
    graph_from_data_frame(directed = TRUE)
 
-plot(graph, vertex_size = 1, edge.width=E(graph)$count/5)
-plot(smaller_graph, vertex_size = 2 ,edge.width=E(smaller_graph)$count/5)
+plot(
+  graph, vertex_size = 1, edge.width=E(graph)$count/5, layout =  layout_in_circle(graph, order = V(graph)
+    )
+  )
 
 
+
+
+
+plot(smaller_graph, vertex_size = 2 ,edge.width=E(smaller_graph)$count/5, 
+     layout = layout_in_circle(smaller_graph, order = V(smaller_graph)), 
+     vertex.label = unique( E(smaller_graph)$institution )
+     )
 
 
 ```
@@ -109,3 +138,7 @@ hist_edgelist %>%
   summarize( count = n() )
 
 ```
+
+
+
+
